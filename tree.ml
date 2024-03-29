@@ -25,15 +25,17 @@ let btimes s1 s2 v i = indent i ^
   s2 ^ " is " ^
   string_of_value v ^ " by B-Times{};\n"
 
+let bless s1 s2 v i = indent i ^
+  s1 ^ " less than " ^
+  s2 ^ " is " ^
+  string_of_value v ^ " by B-Lt{};\n"
+
 (* 式に保存されている式の評価結果を文字列で取ってくる *)
 let get_value expr = match expr with
   Num (n) -> string_of_int n
 | Bool (b) -> string_of_bool b
-| Op (_,_,_, v) -> match v with
-    VNum(n) -> string_of_int n
-  | VBool(b) -> string_of_bool b
-  | VError -> "error"
-  | _ -> "" (* deref しているのでここにはこない *)
+| Op (_,_,_, v) -> string_of_value v
+| If(_,_,_, v) -> string_of_value v
 
 let rec g_expr expr i = match expr with
   Num (n) -> indent i ^
@@ -46,7 +48,7 @@ let rec g_expr expr i = match expr with
     evalto ^
     string_of_bool b ^
     " by E-Bool {};\n"
-| Op (e1, op, e2, v) ->
+| Op (e1, op, e2, v) -> (
   let s1 = get_value e1 in
   let s2 = get_value e2 in
   match op with
@@ -65,12 +67,33 @@ let rec g_expr expr i = match expr with
       bminus s1 s2 v (i+2) ^
       indent i ^ "};\n"
   | Times -> indent i ^
-    (string_of_judg (Evalto(expr, v))) ^
-    " by E-Times {\n" ^
-    g_expr e1 (i+2) ^
-    g_expr e2 (i+2) ^
-    btimes s1 s2 v (i+2) ^
-    indent i ^ "};\n"
+      (string_of_judg (Evalto(expr, v))) ^
+      " by E-Times {\n" ^
+      g_expr e1 (i+2) ^
+      g_expr e2 (i+2) ^
+      btimes s1 s2 v (i+2) ^
+      indent i ^ "};\n"
+  | Less -> indent i ^
+      (string_of_judg (Evalto(expr, v))) ^
+      " by E-Lt {\n" ^
+      g_expr e1 (i+2) ^
+      g_expr e2 (i+2) ^
+      bless s1 s2 v (i+2) ^
+      indent i ^ "};\n")
+| If (e1, e2, e3, v) ->
+  let s1 = get_value e1 in
+  if s1 = "true" then indent i
+    ^ (string_of_judg (Evalto(expr, v)))
+    ^ " by E-IfT {\n"
+    ^ g_expr e1 (i+2)
+    ^ g_expr e2 (i+2)
+    ^ indent i ^ "};\n"
+  else indent i
+    ^ (string_of_judg (Evalto(expr, v)))
+    ^ " by E-IfF {\n"
+    ^ g_expr e1 (i+2)
+    ^ g_expr e3 (i+2)
+    ^ indent i ^ "};\n"
 
 (* interpreter *)
 let rec g judg = match judg with

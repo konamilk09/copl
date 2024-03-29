@@ -4,8 +4,8 @@
 
 /* トークンの定義 */    /* 以降、コメントが C 式になることに注意 */
 %token LPAREN RPAREN
-%token PLUS MINUS TIMES
-%token EVALTO
+%token PLUS MINUS TIMES LESS
+%token EVALTO IF THEN ELSE
 %token <int> NUMBER     /* これは、整数には int 型の値が伴うことを示す */
 %token <bool> TRUE
 %token <bool> FALSE
@@ -19,6 +19,7 @@
 
 /* 演算子の優先順位を指定する */
 /* 下に行くほど強く結合する */
+%left LESS
 %left PLUS MINUS
 %left TIMES
 %nonassoc UNARY
@@ -38,9 +39,11 @@ simple_expr:
 
 expr:
 | simple_expr            { $1 }
-| expr PLUS expr        { Syntax.Op ($1, Syntax.Plus, $3, Syntax.gen_val()) }
+| expr PLUS expr         { Syntax.Op ($1, Syntax.Plus, $3, Syntax.gen_val()) }
 | expr MINUS expr        { Syntax.Op ($1, Syntax.Minus, $3, Syntax.gen_val()) }
 | expr TIMES expr        { Syntax.Op ($1, Syntax.Times, $3, Syntax.gen_val()) }
+| expr LESS expr         { Syntax.Op ($1, Syntax.Less, $3, Syntax.gen_val()) }
+| IF expr THEN expr ELSE expr        { Syntax.If ($2, $4, $6, Syntax.gen_val()) }
 // | MINUS expr %prec UNARY { Syntax.Op (Syntax.Num ( Syntax.Int(0)), Syntax.Minus, $2) }
 
 value:

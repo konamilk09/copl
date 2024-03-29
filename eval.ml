@@ -23,7 +23,21 @@ let rec string_of_expr_eval expr = match expr with
     string_of_expr_eval e2 ^
     "[" ^ string_of_value v ^ "]" ^
     ")"
+  | Less -> "(" ^
+    string_of_expr_eval e1 ^
+    "<" ^
+    string_of_expr_eval e2 ^
+    "[" ^ string_of_value v ^ "]" ^
+    ")"
 end
+| If(e1,e2,e3,v) -> "(if "
+    ^ string_of_expr_eval e1
+    ^ " then "
+    ^ string_of_expr_eval e2
+    ^ " else "
+    ^ string_of_expr_eval e3
+    ^ "[" ^ string_of_value v ^ "])"
+
 (* print the AST *)
 let rec string_of_judg_eval judg = match judg with
   Evalto (e,v) ->
@@ -38,18 +52,17 @@ in print_string str
 (* VVAr と具体的な値を受け取って、VVar に値をセットする *)
 (* set: VVar -> int -> unit *)
 let set v i = match v with
-  VNum(n) -> ()
-| VBool(b) -> ()
-| VError -> ()
-| VVar(v) -> v := Some(i)
+  VVar(v) -> v := Some(i)
+| _ -> () (* ここには来ない *)
 
-(* deref のときにまだ評価されていない変数があったらエラー *)
+(* deref: VVarで中身があるものはref変数の代わりに中身で置き換える *)
+(* deref: VVarで中身がNoneなもの(評価されていないもの)は何もしない *)
 exception UnEval
 let rec deref_value v = match v with
   VNum (n) -> v
 | VBool (b) -> v
 | VError -> v
-| VVar ({contents=None}) -> raise UnEval
+| VVar ({contents=None}) -> v
 | VVar ({contents=Some(VNum(n))}) -> VNum(n)
 | VVar ({contents=Some(VBool(b))}) -> VBool(b)
 | VVar ({contents=Some(VError)}) -> VError
@@ -59,37 +72,63 @@ let rec deref_expr expr = match expr with
 | Bool (b) -> expr
 | Op (e1,op,e2,v) ->
     Op(deref_expr e1, op, deref_expr e2, deref_value v)
+| If (e1,e2,e3,v) ->
+    If(deref_expr e1, deref_expr e2, deref_expr e3, deref_value v)
+
 
 exception NotSupported of string
-let eval_op v1 v2 op = match (v1,v2) with
-  (VNum(i1),VNum(i2)) -> VNum(op i1 i2)
+let eval_op v1 v2 = match (v1,v2) with
+  (VNum(i1),VNum(i2)) -> (i1,i2)
 (* | (VBool(i1),VNum(i2)) -> VError
 | (VNum(i1),VBool(i2)) -> VError
 | (VBool(i1),VBool(i2)) -> VError *)
-| _ -> raise (NotSupported "calculation of not integer values are not supported in EvalML1")
+| _ -> raise (NotSupported "Calculation of not integer values are not supported in EvalML1")
+let eval_if v1 = match v1 with
+| VBool(b) -> b
+| _ -> raise (NotSupported "Only boolean are supported in the condition of if-statement in EvalML1")
 
 let rec g_expr expr = match expr with
-  Syntax.Num(n) -> VNum(n)
-| Syntax.Bool(b) -> VBool(b)
-| Syntax.Op(e1,op,e2,v) -> match op with
-    Syntax.Plus ->
+  Num(n) -> VNum(n)
+| Bool(b) -> VBool(b)
+| Op(e1,op,e2,v) -> begin match op with
+    Plus ->
       let v1 = g_expr e1 in
       let v2 = g_expr e2 in
-      let i = (eval_op v1 v2 (+)) in
-      set v i;
-      i
-    | Syntax.Minus ->
+      let (i1,i2) = (eval_op v1 v2) in
+      let i = i1+i2 in
+      set v (VNum(i));
+      VNum(i);
+    | Minus ->
       let v1 = g_expr e1 in
       let v2 = g_expr e2 in
-      let i = (eval_op v1 v2 (-)) in
-      set v i;
-      i
-    | Syntax.Times ->
+      let (i1,i2) = (eval_op v1 v2) in
+      let i = i1-i2 in
+      set v (VNum(i));
+      VNum(i);
+    | Times ->
       let v1 = g_expr e1 in
       let v2 = g_expr e2 in
-      let i = (eval_op v1 v2 ( * )) in
-      set v i;
-      i
+      let (i1,i2) = (eval_op v1 v2) in
+      let i = i1*i2 in
+      set v (VNum(i));
+      VNum(i);
+    | Less ->
+      let v1 = g_expr e1 in
+      let v2 = g_expr e2 in
+      let (i1,i2) = (eval_op v1 v2) in
+      let b = i1<i2 in
+      set v (VBool(b));
+      VBool(b);
+    end
+| If(e1,e2,e3,v) ->
+    let v1 = g_expr e1 in
+    if (eval_if v1)
+      then let v2 = g_expr e2 in
+        set v v2;
+        v2
+      else let v3 = g_expr e3 in
+        set v v3;
+        v3
 
 exception NotEqual
 let g (Evalto(expr,v)) =
