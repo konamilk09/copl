@@ -29,7 +29,7 @@ start:
 | judgement EOF               { $1 }
 
 simple_expr:
-| NUMBER                 { Syntax.Num ( Syntax.Int ($1)) }
+| NUMBER                 { Syntax.Num ($1) }
 | LPAREN expr RPAREN     { $2 }
 
 expr:
@@ -40,4 +40,4 @@ expr:
 // | MINUS expr %prec UNARY { Syntax.Op (Syntax.Num ( Syntax.Int(0)), Syntax.Minus, $2) }
 
 judgement:
-| expr EVALTO NUMBER {Syntax.Evalto ($1, Syntax.VNum(Syntax.Int($3)))}
+| expr EVALTO NUMBER {Syntax.Evalto ($1, Syntax.VNum($3))}

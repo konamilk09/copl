@@ -27,13 +27,13 @@ let btimes s1 s2 v i = indent i ^
 
 (* 式に保存されている式の評価結果を文字列で取ってくる *)
 let get_value expr = match expr with
-  Num (Int(n)) -> string_of_int n
+  Num (n) -> string_of_int n
 | Op (_,_,_, v) -> match v with
-    VNum(Int(n)) -> string_of_int n
+    VNum(n) -> string_of_int n
 | _ -> "" (* deref しているのでここにはこない *)
 
 let rec g_expr expr i = match expr with
-  Num (Int(n)) -> indent i ^
+  Num (n) -> indent i ^
     string_of_int n ^
     evalto ^
     string_of_int n ^
