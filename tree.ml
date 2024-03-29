@@ -28,9 +28,12 @@ let btimes s1 s2 v i = indent i ^
 (* 式に保存されている式の評価結果を文字列で取ってくる *)
 let get_value expr = match expr with
   Num (n) -> string_of_int n
+| Bool (b) -> string_of_bool b
 | Op (_,_,_, v) -> match v with
     VNum(n) -> string_of_int n
-| _ -> "" (* deref しているのでここにはこない *)
+  | VBool(b) -> string_of_bool b
+  | VError -> "error"
+  | _ -> "" (* deref しているのでここにはこない *)
 
 let rec g_expr expr i = match expr with
   Num (n) -> indent i ^
@@ -38,6 +41,11 @@ let rec g_expr expr i = match expr with
     evalto ^
     string_of_int n ^
     " by E-Int {};\n"
+| Bool (b) -> indent i ^
+    string_of_bool b ^
+    evalto ^
+    string_of_bool b ^
+    " by E-Bool {};\n"
 | Op (e1, op, e2, v) ->
   let s1 = get_value e1 in
   let s2 = get_value e2 in

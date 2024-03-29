@@ -1,8 +1,10 @@
 type value_t = VNum of int
-             (* | VBool of bool *)
+             | VBool of bool
+             | VError
              | VVar of (value_t option ref) (* 途中の評価結果を保存する変数 *)
 type op_t = Plus | Times | Minus
 type expr_t = Num of int
+            | Bool of bool
             | Op of expr_t * op_t * expr_t * value_t (* 最後の value_t は途中の評価結果を保存している *)
 
 (* 空の値の変数を作る *)
@@ -13,6 +15,8 @@ type t = Evalto of expr_t * value_t
 
 let string_of_value v = match v with
   VNum (n) -> string_of_int n
+| VBool (b) -> string_of_bool b
+| VError -> "error"
 | VVar (v) -> match !v with
     None -> "none"
   | Some(some) -> match some with
@@ -21,6 +25,7 @@ let string_of_value v = match v with
 
 let rec string_of_expr_print expr = match expr with
   Num (i) -> string_of_int i
+| Bool (b) -> string_of_bool b
 | Op (e1,op,e2,v) -> begin match op with
     Plus -> "("
       ^ string_of_expr_print e1

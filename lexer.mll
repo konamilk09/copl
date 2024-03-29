@@ -22,6 +22,8 @@ rule token = parse
 | "-"    { MINUS }
 | "*"    { TIMES }
 | "evalto"    { EVALTO }
+| "true"    { TRUE (bool_of_string (Lexing.lexeme lexbuf)) }
+| "false"    { FALSE (bool_of_string (Lexing.lexeme lexbuf)) }
 | digit+                        (* 数字が１個以上 *)
          { NUMBER (int_of_string (Lexing.lexeme lexbuf)) }
 | "-" digit+                    (* 負の数 *)

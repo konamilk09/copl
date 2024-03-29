@@ -7,6 +7,8 @@
 %token PLUS MINUS TIMES
 %token EVALTO
 %token <int> NUMBER     /* これは、整数には int 型の値が伴うことを示す */
+%token <bool> TRUE
+%token <bool> FALSE
 %token EOF              /* End of File: 入力の終わりを示す */
 
 /* エントリーポイント（開始記号）の定義 */
@@ -30,6 +32,8 @@ start:
 
 simple_expr:
 | NUMBER                 { Syntax.Num ($1) }
+| TRUE                   { Syntax.Bool ($1) }
+| FALSE                  { Syntax.Bool ($1) }
 | LPAREN expr RPAREN     { $2 }
 
 expr:
@@ -39,5 +43,10 @@ expr:
 | expr TIMES expr        { Syntax.Op ($1, Syntax.Times, $3, Syntax.gen_val()) }
 // | MINUS expr %prec UNARY { Syntax.Op (Syntax.Num ( Syntax.Int(0)), Syntax.Minus, $2) }
 
+value:
+| NUMBER                 { Syntax.VNum ($1) }
+| TRUE                   { Syntax.VBool ($1) }
+| FALSE                  { Syntax.VBool ($1) }
+
 judgement:
-| expr EVALTO NUMBER {Syntax.Evalto ($1, Syntax.VNum($3))}
+| expr EVALTO value {Syntax.Evalto ($1, $3)}
