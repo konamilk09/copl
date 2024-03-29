@@ -44,11 +44,11 @@ let rec string_of_expr_print expr = match expr with
       ^ string_of_expr_print e2 ^ ")"
   end
 | If (e1,e2,e3,v) -> "if "
-  ^ string_of_expr_print e1
-  ^ " then "
-  ^ string_of_expr_print e2
-  ^ " else "
-  ^ string_of_expr_print e3
+    ^ string_of_expr_print e1
+    ^ " then "
+    ^ string_of_expr_print e2
+    ^ " else "
+    ^ string_of_expr_print e3
   (* print the AST *)
 let rec string_of_judg_print judg = match judg with
   Evalto (e,v) ->

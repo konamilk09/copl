@@ -5,30 +5,30 @@ let rec string_of_expr_eval expr = match expr with
   Num (i) -> string_of_int i
 | Bool (b) -> string_of_bool b
 | Op (e1,op,e2,v) -> begin match op with
-    Plus -> "(" ^
-    string_of_expr_eval e1 ^
-    "+" ^
-    string_of_expr_eval e2 ^
-    "[" ^ string_of_value v ^ "]" ^
-    ")"
-  | Times -> "(" ^
-    string_of_expr_eval e1 ^
-    "*" ^
-    string_of_expr_eval e2 ^
-    "[" ^ string_of_value v ^ "]" ^
-    ")"
-  | Minus -> "(" ^
-    string_of_expr_eval e1 ^
-    "-" ^
-    string_of_expr_eval e2 ^
-    "[" ^ string_of_value v ^ "]" ^
-    ")"
-  | Less -> "(" ^
-    string_of_expr_eval e1 ^
-    "<" ^
-    string_of_expr_eval e2 ^
-    "[" ^ string_of_value v ^ "]" ^
-    ")"
+    Plus -> "("
+      ^ string_of_expr_eval e1
+      ^ "+"
+      ^ string_of_expr_eval e2
+      ^ "[" ^ string_of_value v ^ "]"
+      ^ ")"
+  | Times -> "("
+      ^ string_of_expr_eval e1
+      ^ "*"
+      ^ string_of_expr_eval e2
+      ^ "[" ^ string_of_value v ^ "]"
+      ^ ")"
+  | Minus -> "("
+      ^ string_of_expr_eval e1
+      ^ "-"
+      ^ string_of_expr_eval e2
+      ^ "[" ^ string_of_value v ^ "]"
+      ^ ")"
+  | Less -> "("
+      ^ string_of_expr_eval e1
+      ^ "<"
+      ^ string_of_expr_eval e2
+      ^ "[" ^ string_of_value v ^ "]"
+      ^ ")"
 end
 | If(e1,e2,e3,v) -> "(if "
     ^ string_of_expr_eval e1
@@ -40,8 +40,7 @@ end
 
 (* print the AST *)
 let rec string_of_judg_eval judg = match judg with
-  Evalto (e,v) ->
-    string_of_expr_eval e
+  Evalto (e,v) -> string_of_expr_eval e
     ^ " evalto "
     ^ string_of_value v
 
