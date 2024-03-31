@@ -76,58 +76,51 @@ let rec deref_expr expr = match expr with
 
 
 exception NotSupported of string
-let eval_op v1 v2 = match (v1,v2) with
-  (VNum(i1),VNum(i2)) -> (i1,i2)
-(* | (VBool(i1),VNum(i2)) -> VError
-| (VNum(i1),VBool(i2)) -> VError
-| (VBool(i1),VBool(i2)) -> VError *)
-| _ -> raise (NotSupported "Calculation of not integer values are not supported in EvalML1")
+let eval_op v1 v2 op = begin match (v1,v2) with
+  | (VNum(i1),VNum(i2)) -> begin match op with
+    | Plus -> VNum(i1+i2)
+    | Minus -> VNum(i1-i2)
+    | Times -> VNum(i1*i2)
+    | Less -> VBool(i1<i2)
+    end
+  | (VBool(i1),_) -> VError
+  | (_,VBool(i2)) -> VError
+  | (VError, _) -> VError
+  | (_, VError) -> VError
+  | _ -> raise (NotSupported "VVar(None)")
+  end
 let eval_if v1 = match v1 with
-| VBool(b) -> b
-| _ -> raise (NotSupported "Only boolean are supported in the condition of if-statement in EvalML1")
+| VBool(b) -> VBool(b)
+| VNum(i) -> VError
+| VError -> VError
+| _ -> raise (NotSupported "VVar(None)")
 
 let rec g_expr expr = match expr with
   Num(n) -> VNum(n)
 | Bool(b) -> VBool(b)
-| Op(e1,op,e2,v) -> begin match op with
-    Plus ->
-      let v1 = g_expr e1 in
-      let v2 = g_expr e2 in
-      let (i1,i2) = (eval_op v1 v2) in
-      let i = i1+i2 in
-      set v (VNum(i));
-      VNum(i);
-    | Minus ->
-      let v1 = g_expr e1 in
-      let v2 = g_expr e2 in
-      let (i1,i2) = (eval_op v1 v2) in
-      let i = i1-i2 in
-      set v (VNum(i));
-      VNum(i);
-    | Times ->
-      let v1 = g_expr e1 in
-      let v2 = g_expr e2 in
-      let (i1,i2) = (eval_op v1 v2) in
-      let i = i1*i2 in
-      set v (VNum(i));
-      VNum(i);
-    | Less ->
-      let v1 = g_expr e1 in
-      let v2 = g_expr e2 in
-      let (i1,i2) = (eval_op v1 v2) in
-      let b = i1<i2 in
-      set v (VBool(b));
-      VBool(b);
-    end
+| Op(e1,op,e2,v) -> 
+    let v1 = g_expr e1 in
+    let v2 = g_expr e2 in
+    let i = eval_op v1 v2 op in
+    set v i;
+    i
 | If(e1,e2,e3,v) ->
     let v1 = g_expr e1 in
-    if (eval_if v1)
-      then let v2 = g_expr e2 in
+    let i = eval_if v1 in
+    begin match i with
+    | VBool(true) ->
+        let v2 = g_expr e2 in
         set v v2;
         v2
-      else let v3 = g_expr e3 in
+    | VBool(false) ->
+        let v3 = g_expr e3 in
         set v v3;
         v3
+    | VError ->
+        set v VError;
+        VError
+    | _ -> VError (* eval_if で VBool と VError 以外返してないからここには来ない *)
+    end
 
 exception NotEqual
 let g (Evalto(expr,v)) =

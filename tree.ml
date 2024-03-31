@@ -10,31 +10,31 @@ let rec string_of_judg judg = match judg with
     ^ string_of_value v
 
 let bplus s1 s2 v i = indent i
-    ^ s1 ^ " plus "
-    ^ s2 ^ " is "
+    ^ string_of_value s1 ^ " plus "
+    ^ string_of_value s2 ^ " is "
     ^ string_of_value v ^ " by B-Plus {};\n"
 
 let bminus s1 s2 v i = indent i
-    ^ s1 ^ " minus "
-    ^ s2 ^ " is "
+    ^ string_of_value s1 ^ " minus "
+    ^ string_of_value s2 ^ " is "
     ^ string_of_value v ^ " by B-Minus{};\n"
 
 let btimes s1 s2 v i = indent i
-    ^ s1 ^ " times "
-    ^ s2 ^ " is "
+    ^ string_of_value s1 ^ " times "
+    ^ string_of_value s2 ^ " is "
     ^ string_of_value v ^ " by B-Times{};\n"
 
 let bless s1 s2 v i = indent i
-    ^ s1 ^ " less than "
-    ^ s2 ^ " is "
+    ^ string_of_value s1 ^ " less than "
+    ^ string_of_value s2 ^ " is "
     ^ string_of_value v ^ " by B-Lt{};\n"
 
-(* 式に保存されている式の評価結果を文字列で取ってくる *)
+(* 式に保存されている式の評価結果を値として取ってくる *)
 let get_value expr = match expr with
-  Num (n) -> string_of_int n
-| Bool (b) -> string_of_bool b
-| Op (_,_,_, v) -> string_of_value v
-| If(_,_,_, v) -> string_of_value v
+  Num (n) -> VNum(n)
+| Bool (b) -> VBool(b)
+| Op (_,_,_, v) -> v
+| If(_,_,_, v) -> v
 
 let rec g_expr expr i = match expr with
   Num (n) -> indent i
@@ -81,7 +81,7 @@ let rec g_expr expr i = match expr with
       ^ indent i ^ "};\n")
 | If (e1, e2, e3, v) ->
   let s1 = get_value e1 in
-  if s1 = "true" then indent i
+  if s1 = VBool(true) then indent i
     ^ (string_of_judg (Evalto(expr, v)))
     ^ " by E-IfT {\n"
     ^ g_expr e1 (i+2)
