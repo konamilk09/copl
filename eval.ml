@@ -4,6 +4,8 @@ open Syntax
 let rec string_of_expr_eval expr = match expr with
   Num (i) -> string_of_int i
 | Bool (b) -> string_of_bool b
+| Variable (x,v) -> x
+    ^ "[" ^ string_of_value v ^ "]"
 | Op (e1,op,e2,v) -> begin match op with
     Plus -> "("
       ^ string_of_expr_eval e1
@@ -37,10 +39,18 @@ end
     ^ " else "
     ^ string_of_expr_eval e3
     ^ "[" ^ string_of_value v ^ "])"
+| Let (x,e1,e2,v) -> "(let "
+    ^ x ^ "="
+    ^ string_of_expr_print e1
+    ^ " in "
+    ^ string_of_expr_print e2
+    ^ "[" ^ string_of_value v ^ "])"
 
 (* print the AST *)
 let rec string_of_judg_eval judg = match judg with
-  Evalto (e,v) -> string_of_expr_eval e
+  Evalto (env,expr,v) -> string_of_env env
+    ^ " |- "
+    ^ string_of_expr_eval expr
     ^ " evalto "
     ^ string_of_value v
 
@@ -50,60 +60,68 @@ in print_string str
 
 exception NotSupported of string
 let eval_op v1 v2 op = begin match (v1,v2) with
-  | (VNum(i1),VNum(i2)) -> begin match op with
-    | Plus -> VNum(i1+i2)
-    | Minus -> VNum(i1-i2)
-    | Times -> VNum(i1*i2)
-    | Less -> VBool(i1<i2)
+  | (Value.Num(i1),Value.Num(i2)) -> begin match op with
+    | Plus -> Value.Num(i1+i2)
+    | Minus -> Value.Num(i1-i2)
+    | Times -> Value.Num(i1*i2)
+    | Less -> Value.Bool(i1<i2)
     end
-  | (VBool(i1),_) -> VError
-  | (_,VBool(i2)) -> VError
-  | (VError, _) -> VError
-  | (_, VError) -> VError
-  | _ -> raise (NotSupported "VNone")
+  | (Value.Bool(i1),_) -> Value.Error
+  | (_,Value.Bool(i2)) -> Value.Error
+  | (Value.Error, _) -> Value.Error
+  | (_, Value.Error) -> Value.Error
+  | _ -> raise (NotSupported "None")
   end
 let eval_if v1 = match v1 with
-| VBool(b) -> VBool(b)
-| VNum(i) -> VError
-| VError -> VError
-| _ -> raise (NotSupported "VNone")
+| Value.Bool(b) -> Value.Bool(b)
+| Value.Num(i) -> Value.Error
+| Value.Error -> Value.Error
+| _ -> raise (NotSupported "None")
 
-let rec g_expr expr = match expr with
+let rec g_expr expr env = match expr with
   Num(n) -> Num(n)
 | Bool(b) -> Bool(b)
+| Variable(x,v) -> Variable (x, Env.get env x)
 | Op(e1,op,e2,v) ->
-    let t1 = g_expr e1 in
-    let t2 = g_expr e2 in
+    let t1 = g_expr e1 env in
+    let t2 = g_expr e2 env in
     let v1 = get_value t1 in
     let v2 = get_value t2 in
     let new_v = eval_op v1 v2 op in
     Op(t1,op,t2,new_v)
 | If(e1,e2,e3,v) ->
-    let t1 = g_expr e1 in
+    let t1 = g_expr e1 env in
     let v1 = get_value t1 in
     let i = eval_if v1 in
     begin match i with
-    | VBool(true) ->
-        let t2 = g_expr e2 in
+    | Value.Bool(true) ->
+        let t2 = g_expr e2 env in
         let v2 = get_value t2 in
         If(t1,t2,e3,v2)
-    | VBool(false) ->
-        let t3 = g_expr e3 in
+    | Value.Bool(false) ->
+        let t3 = g_expr e3 env in
         let v3 = get_value t3 in
         If(t1,e2,t3,v3)
-    | VError ->
-        If(t1,e2,e3,VError)
-    | _ -> If(t1,e2,e3,VError) (* eval_if で VBool と VError 以外返してないからここには来ない *)
+    | Value.Error ->
+        If(t1,e2,e3,Value.Error)
+    | _ -> If(t1,e2,e3,Value.Error) (* eval_if で Value.Bool と Value.Error 以外返してないからここには来ない *)
     end
+| Let(x,e1,e2,v) ->
+    let t1 = g_expr e1 env in
+    let v1 = get_value t1 in
+    let new_env = Env.add env x v1 in
+    let t2 = g_expr e2 new_env in
+    let v2 = get_value t2 in
+    Let(x,t1,t2,v2)
 
 exception NotEqual
-let g (Evalto(expr,v)) =
-  let new_expr = g_expr expr in
+let g (Evalto(env,expr,v)) =
+  let new_expr = g_expr expr env in
   let res = get_value new_expr in
   if res = v then
-    Evalto(new_expr,v)
-  else (print_string "\nWARNING: the evaluation not equal to the given answer\n";
-    Evalto(new_expr,res))
+    Evalto(env, new_expr,v)
+  else (print_string "WARNING: the evaluation not equal to the given answer\n";
+    Evalto(env, new_expr,res))
 
 (* Eval.f: start point *)
 let f judg = g judg

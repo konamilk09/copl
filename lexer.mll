@@ -22,16 +22,22 @@ rule token = parse
 | "-"    { MINUS }
 | "*"    { TIMES }
 | "<"    { LESS }
-| "evalto"    { EVALTO }
-| "error"    { ERROR }
-| "if"    { IF }
+| "="    { EQUAL }
+| ","    { COMMA }
+| "|-"   { UNDER }
+| "evalto"  { EVALTO }
+| "error"   { ERROR }
+| "if"      { IF }
 | "then"    { THEN }
 | "else"    { ELSE }
+| "let"     { LET }
+| "in"      { IN }
 | "true"    { TRUE (bool_of_string (Lexing.lexeme lexbuf)) }
-| "false"    { FALSE (bool_of_string (Lexing.lexeme lexbuf)) }
+| "false"   { FALSE (bool_of_string (Lexing.lexeme lexbuf)) }
 | digit+                        (* 数字が１個以上 *)
          { NUMBER (int_of_string (Lexing.lexeme lexbuf)) }
 | "-" digit+                    (* 負の数 *)
          { NUMBER (int_of_string (Lexing.lexeme lexbuf)) }
+| lower+ (alpha|digit)* { VARIABLE (Lexing.lexeme lexbuf) }
 | eof    { EOF }                (* 入力終了 *)
 | _      { failwith ("unknown token: " ^ Lexing.lexeme lexbuf) }

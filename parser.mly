@@ -4,9 +4,13 @@
 
 /* トークンの定義 */    /* 以降、コメントが C 式になることに注意 */
 %token LPAREN RPAREN
+%token <string> VARIABLE
+%token EQUAL COMMA
 %token PLUS MINUS TIMES LESS
+%token UNDER
 %token EVALTO ERROR
 %token IF THEN ELSE
+%token LET IN
 %token <int> NUMBER     /* これは、整数には int 型の値が伴うことを示す */
 %token <bool> TRUE
 %token <bool> FALSE
@@ -37,21 +41,28 @@ simple_expr:
 | TRUE                   { Syntax.Bool ($1) }
 | FALSE                  { Syntax.Bool ($1) }
 | LPAREN expr RPAREN     { $2 }
+| VARIABLE               { Syntax.Variable ($1, Value.gen_val()) }
 
 expr:
 | simple_expr            { $1 }
-| expr PLUS expr         { Syntax.Op ($1, Syntax.Plus, $3, Syntax.gen_val()) }
-| expr MINUS expr        { Syntax.Op ($1, Syntax.Minus, $3, Syntax.gen_val()) }
-| expr TIMES expr        { Syntax.Op ($1, Syntax.Times, $3, Syntax.gen_val()) }
-| expr LESS expr         { Syntax.Op ($1, Syntax.Less, $3, Syntax.gen_val()) }
-| IF expr THEN expr ELSE expr        { Syntax.If ($2, $4, $6, Syntax.gen_val()) }
-// | MINUS expr %prec UNARY { Syntax.Op (Syntax.Num ( Syntax.Int(0)), Syntax.Minus, $2) }
+| expr PLUS expr         { Syntax.Op ($1, Syntax.Plus, $3, Value.gen_val()) }
+| expr MINUS expr        { Syntax.Op ($1, Syntax.Minus, $3, Value.gen_val()) }
+| expr TIMES expr        { Syntax.Op ($1, Syntax.Times, $3, Value.gen_val()) }
+| expr LESS expr         { Syntax.Op ($1, Syntax.Less, $3, Value.gen_val()) }
+| IF expr THEN expr ELSE expr        { Syntax.If ($2, $4, $6, Value.gen_val()) }
+| LET VARIABLE EQUAL expr IN expr    { Syntax.Let ($2, $4, $6, Value.gen_val()) }
 
 value:
-| NUMBER                 { Syntax.VNum ($1) }
-| TRUE                   { Syntax.VBool ($1) }
-| FALSE                  { Syntax.VBool ($1) }
+| NUMBER                 { Value.Num ($1) }
+| TRUE                   { Value.Bool ($1) }
+| FALSE                  { Value.Bool ($1) }
+| ERROR                  { Value.Error }
+
+env:
+| env COMMA VARIABLE EQUAL value { Env.Env($1, $3, $5) }
+| VARIABLE EQUAL value { Env.Env(Env.Empty, $1, $3) }
+// | { Env.Empty }
 
 judgement:
-| expr EVALTO value {Syntax.Evalto ($1, $3)}
-| expr EVALTO ERROR {Syntax.Evalto ($1, Syntax.VError)}
+| env UNDER expr EVALTO value { Syntax.Evalto ($1, $3, $5) }
+| UNDER expr EVALTO value { Syntax.Evalto (Env.Empty, $2, $4) }
