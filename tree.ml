@@ -4,37 +4,82 @@ let evalto = " evalto "
 
 let indent i = String.make i ' '
 
+type op_rule = EPlus | EMinus | ETimes | ELt
+  | EPlusBoolL | EPlusBoolR | EPlusErrorL | EPlusErrorR
+  | EMinusBoolL | EMinusBoolR | EMinusErrorL | EMinusErrorR
+  | ETimesBoolL | ETimesBoolR | ETimesErrorL | ETimesErrorR
+  | ELtBoolL | ELtBoolR | ELtErrorL | ELtErrorR
+
+type if_rule = EIfT | EIfF | EIfInt
+  | EIfError | EIfTError | EIfFError
+
 let rec string_of_judg judg = match judg with
   Evalto (e,v) -> string_of_expr_print e
     ^ " evalto "
     ^ string_of_value v
 
-let bplus s1 s2 v i = indent i
-    ^ string_of_value s1 ^ " plus "
-    ^ string_of_value s2 ^ " is "
+let bplus v1 v2 v i = indent i
+    ^ string_of_value v1 ^ " plus "
+    ^ string_of_value v2 ^ " is "
     ^ string_of_value v ^ " by B-Plus {};\n"
 
-let bminus s1 s2 v i = indent i
-    ^ string_of_value s1 ^ " minus "
-    ^ string_of_value s2 ^ " is "
+let bminus v1 v2 v i = indent i
+    ^ string_of_value v1 ^ " minus "
+    ^ string_of_value v2 ^ " is "
     ^ string_of_value v ^ " by B-Minus{};\n"
 
-let btimes s1 s2 v i = indent i
-    ^ string_of_value s1 ^ " times "
-    ^ string_of_value s2 ^ " is "
+let btimes v1 v2 v i = indent i
+    ^ string_of_value v1 ^ " times "
+    ^ string_of_value v2 ^ " is "
     ^ string_of_value v ^ " by B-Times{};\n"
 
-let bless s1 s2 v i = indent i
-    ^ string_of_value s1 ^ " less than "
-    ^ string_of_value s2 ^ " is "
+let bless v1 v2 v i = indent i
+    ^ string_of_value v1 ^ " less than "
+    ^ string_of_value v2 ^ " is "
     ^ string_of_value v ^ " by B-Lt{};\n"
 
-(* 式に保存されている式の評価結果を値として取ってくる *)
-let get_value expr = match expr with
-  Num (n) -> VNum(n)
-| Bool (b) -> VBool(b)
-| Op (_,_,_, v) -> v
-| If(_,_,_, v) -> v
+exception NotEvaluated
+let infer_op op v1 v2 = match op with
+  Plus -> begin match (v1,v2) with
+      (VBool(_),_)-> EPlusBoolL
+    | (_,VBool(_))-> EPlusBoolR
+    | (VError,_)-> EPlusErrorL
+    | (_,VError)-> EPlusErrorR
+    | (VNum(_),VNum(_))-> EPlus
+    | _ -> raise NotEvaluated
+    end
+| Minus -> begin match (v1,v2) with
+      (VBool(_),_)-> EMinusBoolL
+    | (_,VBool(_))-> EMinusBoolR
+    | (VError,_)-> EMinusErrorL
+    | (_,VError)-> EMinusErrorR
+    | (VNum(_),VNum(_))-> EMinus
+    | _ -> raise NotEvaluated
+    end
+| Times -> begin match (v1,v2) with
+      (VBool(_),_)-> ETimesBoolL
+    | (_,VBool(_))-> ETimesBoolR
+    | (VError,_)-> ETimesErrorL
+    | (_,VError)-> ETimesErrorR
+    | (VNum(_),VNum(_))-> ETimes
+    | _ -> raise NotEvaluated
+    end
+| Less -> begin match (v1,v2) with
+      (VBool(_),_)-> ELtBoolL
+    | (_,VBool(_))-> ELtBoolR
+    | (VError,_)-> ELtErrorL
+    | (_,VError)-> ELtErrorR
+    | (VNum(_),VNum(_))-> ELt
+    | _ -> raise NotEvaluated
+    end
+let infer_if v1 v2 v3 = match (v1,v2,v3) with
+  (VNum(_),_,_) -> EIfInt
+| (VError,_,_) -> EIfError
+| (VBool(true),VError,_) -> EIfTError
+| (VBool(false),_,VError) -> EIfFError
+| (VBool(true),v,_) -> EIfT
+| (VBool(false),_,v) -> EIfF
+| (VNone,_,_) -> raise NotEvaluated
 
 let rec g_expr expr i = match expr with
   Num (n) -> indent i
@@ -47,52 +92,115 @@ let rec g_expr expr i = match expr with
     ^ evalto
     ^ string_of_bool b
     ^ " by E-Bool {};\n"
-| Op (e1, op, e2, v) -> (
-  let s1 = get_value e1 in
-  let s2 = get_value e2 in
-  match op with
-    Plus -> indent i
-      ^ (string_of_judg (Evalto(expr, v)))
-      ^ " by E-Plus {\n"
+| Op (e1, op, e2, v) ->
+  let v1 = get_value e1 in
+  let v2 = get_value e2 in
+  let rule = infer_op op v1 v2 in
+  indent i
+  ^ string_of_judg (Evalto(expr, v)) ^
+  begin match rule with
+      EPlus ->
+      " by E-Plus {\n"
       ^ g_expr e1 (i+2)
       ^ g_expr e2 (i+2)
-      ^ bplus s1 s2 v (i+2)
-      ^ indent i ^ "};\n"
-  | Minus -> indent i
-      ^ (string_of_judg (Evalto(expr, v)))
-      ^ " by E-Minus {\n"
+      ^ bplus v1 v2 v (i+2)
+    | EMinus ->
+      " by E-Minus {\n"
       ^ g_expr e1 (i+2)
       ^ g_expr e2 (i+2)
-      ^ bminus s1 s2 v (i+2)
-      ^ indent i ^ "};\n"
-  | Times -> indent i
-      ^ (string_of_judg (Evalto(expr, v)))
-      ^ " by E-Times {\n"
+      ^ bminus v1 v2 v (i+2)
+    | ETimes ->
+      " by E-Times {\n"
       ^ g_expr e1 (i+2)
       ^ g_expr e2 (i+2)
-      ^ btimes s1 s2 v (i+2)
-      ^ indent i ^ "};\n"
-  | Less -> indent i
-      ^ (string_of_judg (Evalto(expr, v)))
-      ^ " by E-Lt {\n"
+      ^ btimes v1 v2 v (i+2)
+    | ELt ->
+      " by E-Lt {\n"
       ^ g_expr e1 (i+2)
       ^ g_expr e2 (i+2)
-      ^ bless s1 s2 v (i+2)
-      ^ indent i ^ "};\n")
+      ^ bless v1 v2 v (i+2)
+    | EPlusBoolL ->
+      " by E-PlusBoolL {\n"
+      ^ g_expr e1 (i+2)
+    | EPlusBoolR ->
+      " by E-PlusBoolR {\n"
+      ^ g_expr e2 (i+2)
+    | EPlusErrorL ->
+      " by E-PlusErrorL {\n"
+      ^ g_expr e1 (i+2)
+    | EPlusErrorR ->
+      " by E-PlusErrorR {\n"
+      ^ g_expr e2 (i+2)
+    | EMinusBoolL ->
+      " by E-MinusBoolL {\n"
+      ^ g_expr e1 (i+2)
+    | EMinusBoolR ->
+      " by E-MinusBoolR {\n"
+      ^ g_expr e2 (i+2)
+    | EMinusErrorL ->
+      " by E-MinusErrorL {\n"
+      ^ g_expr e1 (i+2)
+    | EMinusErrorR ->
+      " by E-MinusErrorR {\n"
+      ^ g_expr e2 (i+2)
+    | ETimesBoolL ->
+      " by E-TimesBoolL {\n"
+      ^ g_expr e1 (i+2)
+    | ETimesBoolR ->
+      " by E-TimesBoolR {\n"
+      ^ g_expr e2 (i+2)
+    | ETimesErrorL ->
+      " by E-TimesErrorL {\n"
+      ^ g_expr e1 (i+2)
+    | ETimesErrorR ->
+      " by E-TimesErrorR {\n"
+      ^ g_expr e2 (i+2)
+    | ELtBoolL ->
+      " by E-LtBoolL {\n"
+      ^ g_expr e1 (i+2)
+    | ELtBoolR ->
+      " by E-LtBoolR {\n"
+      ^ g_expr e2 (i+2)
+    | ELtErrorL ->
+      " by E-LtErrorL {\n"
+      ^ g_expr e1 (i+2)
+    | ELtErrorR ->
+      " by E-LtErrorR {\n"
+      ^ g_expr e2 (i+2)
+    end
+  ^ indent i ^ "};\n"
 | If (e1, e2, e3, v) ->
-  let s1 = get_value e1 in
-  if s1 = VBool(true) then indent i
-    ^ (string_of_judg (Evalto(expr, v)))
-    ^ " by E-IfT {\n"
+  let v1 = get_value e1 in
+  let v2 = get_value e2 in
+  let v3 = get_value e3 in
+  let rule = infer_if v1 v2 v3 in
+  indent i
+  ^ string_of_judg (Evalto(expr, v)) ^
+  begin match rule with
+    | EIfT ->
+    " by E-IfT {\n"
     ^ g_expr e1 (i+2)
     ^ g_expr e2 (i+2)
-    ^ indent i ^ "};\n"
-  else indent i
-    ^ (string_of_judg (Evalto(expr, v)))
-    ^ " by E-IfF {\n"
+    | EIfF ->
+    " by E-IfF {\n"
     ^ g_expr e1 (i+2)
     ^ g_expr e3 (i+2)
-    ^ indent i ^ "};\n"
+    | EIfInt ->
+    " by E-IfInt {\n"
+    ^ g_expr e1 (i+2)
+    | EIfError ->
+    " by E-IfError {\n"
+    ^ g_expr e1 (i+2)
+    | EIfTError ->
+    " by E-IfTError {\n"
+    ^ g_expr e1 (i+2)
+    ^ g_expr e2 (i+2)
+    | EIfFError ->
+    " by E-IfFError {\n"
+    ^ g_expr e1 (i+2)
+    ^ g_expr e3 (i+2)
+  end
+  ^ indent i ^ "};\n"
 
 (* interpreter *)
 let rec g judg = match judg with

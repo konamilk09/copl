@@ -6,8 +6,8 @@ let go () =
   Syntax.print judg;    (* 入力を表示する *)
   print_newline ();
   (* 計算結果を表示する *)
-  print_string "Evaluated : ";
   let judg = Eval.f judg in
+  print_string "Evaluated : ";
   Eval.print_eval judg;    (* 評価付きを表示する *)
   print_newline ();
   print_string "Tree :\n";
