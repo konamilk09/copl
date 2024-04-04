@@ -5,7 +5,8 @@
 /* トークンの定義 */    /* 以降、コメントが C 式になることに注意 */
 %token LPAREN RPAREN
 %token PLUS MINUS TIMES LESS
-%token EVALTO IF THEN ELSE
+%token EVALTO ERROR
+%token IF THEN ELSE
 %token <int> NUMBER     /* これは、整数には int 型の値が伴うことを示す */
 %token <bool> TRUE
 %token <bool> FALSE
@@ -53,3 +54,4 @@ value:
 
 judgement:
 | expr EVALTO value {Syntax.Evalto ($1, $3)}
+| expr EVALTO ERROR {Syntax.Evalto ($1, Syntax.VError)}

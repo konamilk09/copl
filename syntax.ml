@@ -1,7 +1,7 @@
 type value_t = VNum of int
              | VBool of bool
              | VError
-             | VVar of (value_t option ref) (* 途中の評価結果を保存する変数 *)
+             | VNone
 type op_t = Plus | Times | Minus | Less
 type expr_t = Num of int
             | Bool of bool
@@ -9,18 +9,23 @@ type expr_t = Num of int
             | If of expr_t * expr_t * expr_t * value_t
 
 (* 空の値の変数を作る *)
-let gen_val () = VVar (ref None)
+let gen_val () = VNone
 
 (* Syntax.t: judgement: type of Abstract Syntax Tree which parser generates *)
 type t = Evalto of expr_t * value_t
+
+(* 式に保存されている式の評価結果を値として取ってくる *)
+let get_value expr = match expr with
+  Num (n) -> VNum(n)
+| Bool (b) -> VBool(b)
+| Op (_,_,_, v) -> v
+| If(_,_,_, v) -> v
 
 let rec string_of_value v = match v with
   VNum (n) -> string_of_int n
 | VBool (b) -> string_of_bool b
 | VError -> "error"
-| VVar (v) -> match !v with
-    None -> "none"
-  | Some(some) -> string_of_value some
+| VNone -> "none"
 
 let rec string_of_expr_print expr = match expr with
   Num (i) -> string_of_int i

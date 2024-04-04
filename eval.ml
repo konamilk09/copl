@@ -48,33 +48,6 @@ let print_eval judg =
   let str = string_of_judg_eval judg
 in print_string str
 
-(* VVAr と具体的な値を受け取って、VVar に値をセットする *)
-(* set: VVar -> int -> unit *)
-let set v i = match v with
-  VVar(v) -> v := Some(i)
-| _ -> () (* ここには来ない *)
-
-(* deref: VVarで中身があるものはref変数の代わりに中身で置き換える *)
-(* deref: VVarで中身がNoneなもの(評価されていないもの)は何もしない *)
-exception UnEval
-let rec deref_value v = match v with
-  VNum (n) -> v
-| VBool (b) -> v
-| VError -> v
-| VVar ({contents=None}) -> v
-| VVar ({contents=Some(VNum(n))}) -> VNum(n)
-| VVar ({contents=Some(VBool(b))}) -> VBool(b)
-| VVar ({contents=Some(VError)}) -> VError
-| VVar ({contents=Some(VVar(_) as vv)}) -> deref_value vv
-let rec deref_expr expr = match expr with
-  Num (n) -> expr
-| Bool (b) -> expr
-| Op (e1,op,e2,v) ->
-    Op(deref_expr e1, op, deref_expr e2, deref_value v)
-| If (e1,e2,e3,v) ->
-    If(deref_expr e1, deref_expr e2, deref_expr e3, deref_value v)
-
-
 exception NotSupported of string
 let eval_op v1 v2 op = begin match (v1,v2) with
   | (VNum(i1),VNum(i2)) -> begin match op with
@@ -87,49 +60,50 @@ let eval_op v1 v2 op = begin match (v1,v2) with
   | (_,VBool(i2)) -> VError
   | (VError, _) -> VError
   | (_, VError) -> VError
-  | _ -> raise (NotSupported "VVar(None)")
+  | _ -> raise (NotSupported "VNone")
   end
 let eval_if v1 = match v1 with
 | VBool(b) -> VBool(b)
 | VNum(i) -> VError
 | VError -> VError
-| _ -> raise (NotSupported "VVar(None)")
+| _ -> raise (NotSupported "VNone")
 
 let rec g_expr expr = match expr with
-  Num(n) -> VNum(n)
-| Bool(b) -> VBool(b)
-| Op(e1,op,e2,v) -> 
-    let v1 = g_expr e1 in
-    let v2 = g_expr e2 in
-    let i = eval_op v1 v2 op in
-    set v i;
-    i
+  Num(n) -> Num(n)
+| Bool(b) -> Bool(b)
+| Op(e1,op,e2,v) ->
+    let t1 = g_expr e1 in
+    let t2 = g_expr e2 in
+    let v1 = get_value t1 in
+    let v2 = get_value t2 in
+    let new_v = eval_op v1 v2 op in
+    Op(t1,op,t2,new_v)
 | If(e1,e2,e3,v) ->
-    let v1 = g_expr e1 in
+    let t1 = g_expr e1 in
+    let v1 = get_value t1 in
     let i = eval_if v1 in
     begin match i with
     | VBool(true) ->
-        let v2 = g_expr e2 in
-        set v v2;
-        v2
+        let t2 = g_expr e2 in
+        let v2 = get_value t2 in
+        If(t1,t2,e3,v2)
     | VBool(false) ->
-        let v3 = g_expr e3 in
-        set v v3;
-        v3
+        let t3 = g_expr e3 in
+        let v3 = get_value t3 in
+        If(t1,e2,t3,v3)
     | VError ->
-        set v VError;
-        VError
-    | _ -> VError (* eval_if で VBool と VError 以外返してないからここには来ない *)
+        If(t1,e2,e3,VError)
+    | _ -> If(t1,e2,e3,VError) (* eval_if で VBool と VError 以外返してないからここには来ない *)
     end
 
 exception NotEqual
 let g (Evalto(expr,v)) =
-  let i = g_expr expr in
-  let new_expr = deref_expr expr in
-  if i = v then
+  let new_expr = g_expr expr in
+  let res = get_value new_expr in
+  if res = v then
     Evalto(new_expr,v)
   else (print_string "\nWARNING: the evaluation not equal to the given answer\n";
-    Evalto(new_expr,v))
+    Evalto(new_expr,res))
 
 (* Eval.f: start point *)
 let f judg = g judg

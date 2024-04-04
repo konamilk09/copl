@@ -23,6 +23,7 @@ rule token = parse
 | "*"    { TIMES }
 | "<"    { LESS }
 | "evalto"    { EVALTO }
+| "error"    { ERROR }
 | "if"    { IF }
 | "then"    { THEN }
 | "else"    { ELSE }
