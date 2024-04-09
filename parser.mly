@@ -60,9 +60,9 @@ value:
 
 env:
 | env COMMA VARIABLE EQUAL value { Env.Env($1, $3, $5) }
-| VARIABLE EQUAL value { Env.Env(Env.Empty, $1, $3) }
-// | { Env.Empty }
+| VARIABLE EQUAL value { Env.Env(Env.Emp, $1, $3) }
+// | { Env.Emp }
 
 judgement:
 | env UNDER expr EVALTO value { Syntax.Evalto ($1, $3, $5) }
-| UNDER expr EVALTO value { Syntax.Evalto (Env.Empty, $2, $4) }
+| UNDER expr EVALTO value { Syntax.Evalto (Env.Emp, $2, $4) }
