@@ -1,5 +1,5 @@
-SOURCES = value.ml env.ml syntax.ml parser.mly lexer.mll \
-		eval.ml tree.ml main.ml
-RESULT = ml2.o
+SOURCES = value.ml syntax.ml parser.mly lexer.mll \
+		main.ml
+RESULT = ml3.o
 OCAMLMAKEFILE = $(OPAM_SWITCH_PREFIX)/lib/ocaml-makefile/OCamlMakefile
 include $(OCAMLMAKEFILE)

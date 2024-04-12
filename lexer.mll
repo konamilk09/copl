@@ -25,6 +25,7 @@ rule token = parse
 | "="    { EQUAL }
 | ","    { COMMA }
 | "|-"   { UNDER }
+| "->"   { ARROW }
 | "evalto"  { EVALTO }
 | "error"   { ERROR }
 | "if"      { IF }
@@ -32,6 +33,7 @@ rule token = parse
 | "else"    { ELSE }
 | "let"     { LET }
 | "in"      { IN }
+| "fun"      { FUN }
 | "true"    { TRUE (bool_of_string (Lexing.lexeme lexbuf)) }
 | "false"   { FALSE (bool_of_string (Lexing.lexeme lexbuf)) }
 | digit+                        (* 数字が１個以上 *)

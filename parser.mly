@@ -7,10 +7,11 @@
 %token <string> VARIABLE
 %token EQUAL COMMA
 %token PLUS MINUS TIMES LESS
-%token UNDER
+%token UNDER ARROW
 %token EVALTO ERROR
 %token IF THEN ELSE
 %token LET IN
+%token FUN
 %token <int> NUMBER     /* これは、整数には int 型の値が伴うことを示す */
 %token <bool> TRUE
 %token <bool> FALSE
@@ -34,35 +35,22 @@
 %%
 
 start:
-| judgement EOF               { $1 }
+| expr EOF               { $1 }
 
 simple_expr:
 | NUMBER                 { Syntax.Num ($1) }
 | TRUE                   { Syntax.Bool ($1) }
 | FALSE                  { Syntax.Bool ($1) }
 | LPAREN expr RPAREN     { $2 }
-| VARIABLE               { Syntax.Variable ($1, Value.gen_val()) }
+| VARIABLE               { Syntax.Variable ($1) }
 
 expr:
 | simple_expr            { $1 }
-| expr PLUS expr         { Syntax.Op ($1, Syntax.Plus, $3, Value.gen_val()) }
-| expr MINUS expr        { Syntax.Op ($1, Syntax.Minus, $3, Value.gen_val()) }
-| expr TIMES expr        { Syntax.Op ($1, Syntax.Times, $3, Value.gen_val()) }
-| expr LESS expr         { Syntax.Op ($1, Syntax.Less, $3, Value.gen_val()) }
-| IF expr THEN expr ELSE expr        { Syntax.If ($2, $4, $6, Value.gen_val()) }
-| LET VARIABLE EQUAL expr IN expr    { Syntax.Let ($2, $4, $6, Value.gen_val()) }
-
-value:
-| NUMBER                 { Value.Num ($1) }
-| TRUE                   { Value.Bool ($1) }
-| FALSE                  { Value.Bool ($1) }
-| ERROR                  { Value.Error }
-
-env:
-| env COMMA VARIABLE EQUAL value { Env.Env($1, $3, $5) }
-| VARIABLE EQUAL value { Env.Env(Env.Emp, $1, $3) }
-// | { Env.Emp }
-
-judgement:
-| env UNDER expr EVALTO value { Syntax.Evalto ($1, $3, $5) }
-| UNDER expr EVALTO value { Syntax.Evalto (Env.Emp, $2, $4) }
+| expr PLUS expr         { Syntax.Op ($1, Syntax.Plus, $3) }
+| expr MINUS expr        { Syntax.Op ($1, Syntax.Minus, $3) }
+| expr TIMES expr        { Syntax.Op ($1, Syntax.Times, $3) }
+| expr LESS expr         { Syntax.Op ($1, Syntax.Less, $3) }
+| IF expr THEN expr ELSE expr        { Syntax.If ($2, $4, $6) }
+| LET VARIABLE EQUAL expr IN expr    { Syntax.Let ($2, $4, $6) }
+| FUN VARIABLE ARROW expr            { Syntax.Fun ($2, $4) }
+| expr expr                          { Syntax.App ($1, $2) }
