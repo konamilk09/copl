@@ -1,22 +1,15 @@
 (* メイン関数 *)
 let go () =
+  (* 標準入力を字句解析して、構文解析した結果を expr に入れる *)
   let expr = Parser.start Lexer.token (Lexing.from_channel stdin) in
-  (* これで標準入力を字句解析して、構文解析した結果を judg に入れ *)
-  print_string "Parsed : ";
-  Syntax.print expr;
-  print_newline ()
-
-(* 入力を表示する *)
-(* print_newline ();
-   (* 計算結果を表示する *)
-   let judg = Eval.f judg in
-   print_string "Evaluated : ";
-   Eval.print_eval judg;
-   (* 評価付きを表示する *)
-   print_newline ();
-   print_string "Tree :\n";
-   let str = Tree.f judg in
-   print_string str *)
+  (* 入力を表示する *)
+  (* print_string "Parsed : ";
+     Syntax.print expr;
+     print_newline (); *)
+  (* 導出木を表示する *)
+  let eexpr = Eval.f expr in
+  (* print_string "Evaluated :\n"; *)
+  Eval.print eexpr
 
 (* スタートアップ *)
 let _ = go ()

@@ -1,4 +1,4 @@
-type op_t = Plus | Times | Minus | Less
+type op_t = Plus | Times | Minus | Lt
 
 type t =
   | Num of int
@@ -10,33 +10,8 @@ type t =
   | Fun of string * t
   | App of t * t
 
-(* 式に保存されている式の評価結果を値として取ってくる *)
-(* let get_value expr =
-   match expr with
-   | Num n -> Value.Num n
-   | Bool b -> Value.Bool b
-   | Variable (x, v) -> v
-   | Op (_, _, _, v) -> v
-   | If (_, _, _, v) -> v
-   | Let (_, _, _, v) -> v
-   | Fun (_, _, v) -> v
-   | App (_, _, v) -> v *)
-
-(* let rec string_of_value v =
-   match v with
-   | Value.Num n -> string_of_int n
-   | Value.Bool b -> string_of_bool b
-   | Value.Error -> "error"
-   | Value.None -> "none" *)
-
-(* let rec string_of_env env =
-   match env with
-   | Env.Emp -> ""
-   | Env.Env (Env.Emp, x, v) -> x ^ "=" ^ string_of_value v
-   | Env.Env (e, x, v) -> string_of_env e ^ ", " ^ x ^ "=" ^ string_of_value v *)
-
 let string_of_op op =
-  match op with Plus -> "+" | Minus -> "-" | Times -> "*" | Less -> "<"
+  match op with Plus -> "+" | Minus -> "-" | Times -> "*" | Lt -> "<"
 
 let rec string_of_expr expr =
   match expr with
@@ -50,8 +25,8 @@ let rec string_of_expr expr =
       ^ string_of_expr e3
   | Let (x, e1, e2) ->
       "let " ^ x ^ "=" ^ string_of_expr e1 ^ " in " ^ string_of_expr e2
-  | Fun (x, e) -> "fun " ^ x ^ " -> " ^ string_of_expr e
-  | App (e1, e2) -> string_of_expr e1 ^ " " ^ string_of_expr e2
+  | Fun (x, e) -> "(fun " ^ x ^ " -> " ^ string_of_expr e ^ ")"
+  | App (e1, e2) -> "(" ^ string_of_expr e1 ^ " " ^ string_of_expr e2 ^ ")"
 
 (* print the AST *)
 (* let rec string_of_judg judg =
