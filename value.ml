@@ -2,6 +2,7 @@ type t =
   | Num of int
   | Bool of bool
   | Fun of env_t * string * Syntax.t
+  | FunRec of env_t * string * string * Syntax.t
   | Error
   | None
 
@@ -34,6 +35,9 @@ let rec string_of_value v =
   | Fun (env, x, e) ->
       "(" ^ string_of_env env ^ ")[fun " ^ x ^ " -> " ^ Syntax.string_of_expr e
       ^ "]"
+  | FunRec (env, x, y, e) ->
+      "(" ^ string_of_env env ^ ")[rec " ^ x ^ " = fun " ^ y ^ " -> "
+      ^ Syntax.string_of_expr e ^ "]"
   | Error -> "error"
   | None -> "none"
 

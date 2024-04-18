@@ -32,6 +32,7 @@ rule token = parse
 | "then"    { THEN }
 | "else"    { ELSE }
 | "let"     { LET }
+| "rec"     { REC }
 | "in"      { IN }
 | "fun"      { FUN }
 | "true"    { TRUE (bool_of_string (Lexing.lexeme lexbuf)) }

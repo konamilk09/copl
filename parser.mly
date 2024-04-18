@@ -11,7 +11,7 @@ open Syntax
 %token UNDER ARROW
 %token EVALTO ERROR
 %token IF THEN ELSE
-%token LET IN
+%token LET REC IN
 %token FUN
 %token <int> NUMBER     /* これは、整数には int 型の値が伴うことを示す */
 %token <bool> TRUE
@@ -54,6 +54,7 @@ expr:
 | expr LESS expr         { Op ($1, Lt, $3) }
 | IF expr THEN expr ELSE expr        { If ($2, $4, $6) }
 | LET VARIABLE EQUAL expr IN expr    { Let ($2, $4, $6) }
+| LET REC VARIABLE EQUAL FUN VARIABLE ARROW expr IN expr    { LetRec ($3, $6, $8, $10) }
 | FUN VARIABLE ARROW expr            { Fun ($2, $4) }
 | expr simple_expr %prec prec_app           { App ($1, $2) }
 // expr simple_expr じゃないと一つの引数で左結合にならない。

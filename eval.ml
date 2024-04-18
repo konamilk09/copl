@@ -100,8 +100,15 @@ let rec string_of_t { env; expr; value; rule } i =
       ^ string_of_t t2 (i + 2)
       ^ indent i ^ "};\n"
   | EFun -> " by E-Fun {};\n"
+  | ELetRec t -> " by E-LetRec {\n" ^ string_of_t t (i + 2) ^ indent i ^ "};\n"
   | EApp (t1, t2, t3) ->
       " by E-App {\n"
+      ^ string_of_t t1 (i + 2)
+      ^ string_of_t t2 (i + 2)
+      ^ string_of_t t3 (i + 2)
+      ^ indent i ^ "};\n"
+  | EAppRec (t1, t2, t3) ->
+      " by E-AppRec {\n"
       ^ string_of_t t1 (i + 2)
       ^ string_of_t t2 (i + 2)
       ^ string_of_t t3 (i + 2)
@@ -144,6 +151,14 @@ let eval_if v1 =
 
 exception Eval of Value.env_t * Syntax.t
 
+let () =
+  Printexc.register_printer (function
+    | Eval (env, exp) ->
+        Some
+          ("Eval(" ^ Value.string_of_env env ^ "," ^ Syntax.string_of_expr exp
+         ^ ")")
+    | _ -> None)
+
 let rec g env expr =
   match expr with
   | Syntax.Num n -> { env; expr; value = Value.Num n; rule = EInt }
@@ -185,6 +200,11 @@ let rec g env expr =
       let v2 = t2.value in
       let rule = ELet (t1, t2) in
       { env; expr; value = v2; rule }
+  | Syntax.LetRec (x, y, e1, e2) ->
+      let new_env = Value.add env x (Value.FunRec (env, x, y, e1)) in
+      let ret = g new_env e2 in
+      let value = ret.value in
+      { env; expr; value; rule = ELetRec ret }
   | Syntax.Fun (x, e) ->
       let value = Value.Fun (env, x, e) in
       { env; expr; value; rule = EFun }
@@ -198,6 +218,10 @@ let rec g env expr =
           let new_env = Value.add env2 x v2 in
           let ret = g new_env e0 in
           { env; expr; value = ret.value; rule = EApp (t1, t2, ret) }
+      | Value.FunRec (env2, x, y, e0) ->
+          let new_env = Value.add (Value.add env2 x v1) y v2 in
+          let ret = g new_env e0 in
+          { env; expr; value = ret.value; rule = EAppRec (t1, t2, ret) }
       | _ -> raise (Eval (env, expr)))
 
 (* starting point *)

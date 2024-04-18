@@ -7,6 +7,7 @@ type t =
   | Op of t * op_t * t
   | If of t * t * t
   | Let of string * t * t
+  | LetRec of string * string * t * t
   | Fun of string * t
   | App of t * t
 
@@ -25,6 +26,9 @@ let rec string_of_expr expr =
       ^ string_of_expr e3
   | Let (x, e1, e2) ->
       "let " ^ x ^ "=" ^ string_of_expr e1 ^ " in " ^ string_of_expr e2
+  | LetRec (x, y, e1, e2) ->
+      "let rec " ^ x ^ "=" ^ "fun " ^ y ^ " -> " ^ string_of_expr e1 ^ " in "
+      ^ string_of_expr e2
   | Fun (x, e) -> "(fun " ^ x ^ " -> " ^ string_of_expr e ^ ")"
   | App (e1, e2) -> "(" ^ string_of_expr e1 ^ " " ^ string_of_expr e2 ^ ")"
 
