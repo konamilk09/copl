@@ -90,7 +90,7 @@ let rec string_of_t { env; expr; value; rule } i =
       ^ string_of_t t2 (i + 2)
       ^ indent i ^ "};\n"
   | EIfF (t1, t2) ->
-      " by E-IfT {\n"
+      " by E-IfF {\n"
       ^ string_of_t t1 (i + 2)
       ^ string_of_t t2 (i + 2)
       ^ indent i ^ "};\n"
