@@ -3,8 +3,8 @@ CoPL のオンライン演習問題の解答を出力するプログラムです
 ## 仕組み
 1. 字句解析
 2. 構文解析
-3. 評価（インタプリタ）
-4. 導出の出力
+3. 評価（インタプリタ）と導出
+4. 出力
 
 字句解析と構文解析は、これらのプログラムを自動生成するOCamlのプログラムを使います。
 
@@ -14,12 +14,11 @@ CoPL のオンライン演習問題の解答を出力するプログラムです
 ```
 ┬ .gitignore
 ├ Makefile 
-├ eval.ml // 構文木を評価し、評価結果を木に記録
+├ eval.ml // 構文木を評価し導出を推論する
 ├ lexer.mll // 字句の定義
 ├ main.ml // メインのプログラム
 ├ parser.mly // 文法の定義
-├ syntax.ml // 構文木の定義
-└ tree.ml // 導出を演習システムの形式に沿って出力
+└ syntax.ml // 構文木の定義
 ```
 
 ## 使い方
@@ -29,39 +28,32 @@ make
 でビルド
 
 ```
-cat t31.txt | ./ml1err.o
+cat test.txt | ./ml3.o
 ```
-でテスト入力`t31.txt`をプログラム`ml1err.o`に渡して実行できます。
+でテスト入力`test.txt`をプログラム`ml3.o`に渡して実行できます。
 
 プログラムの名前は`Makefile`の
 ```
-RESULT = ml1err.o
+RESULT = ml3.o
 ```
 の右辺を変更してください。
 
 ### 入力
-`<式> evalto <数字>`の形の入力を受け取ります。\\
-式は、加減乗算、比較、if文、エラーの場合に対応しています。
+`<式>`の形の入力を受け取ります。それ以外は
+```
+Fatal error: exception Stdlib.Parsing.Parse_error
+```
+となります。\\
+式は、[教科書](https://www.fos.kuis.kyoto-u.ac.jp/~igarashi/CoPL/index.cgi)の`EvalML3`に対応しています。
 #### 入力例
 ```
-(4+5)*(1-10) evalto -81
+1 - 10
 ```
 #### 出力例
 ```
-Parsed : ((4+5)*(1-10)) evalto -81
-Evaluated : ((4+5[9])*(1-10[-9])[-81]) evalto -81
-Tree :
-((4+5)*(1-10)) evalto -81 by E-Times {
-  (4+5) evalto 9 by E-Plus {
-    4 evalto 4 by E-Int {};
-    5 evalto 5 by E-Int {};
-    4 plus 5 is 9 by B-Plus {};
-  };
-  (1-10) evalto -9 by E-Minus {
-    1 evalto 1 by E-Int {};
-    10 evalto 10 by E-Int {};
-    1 minus 10 is -9 by B-Minus{};
-  };
-  9 times -9 is -81 by B-Times{};
+|- (1-10) evalto -9 by E-Minus {
+  |- 1 evalto 1 by E-Int {};
+  |- 10 evalto 10 by E-Int {};
+  1 minus 10 is -9 by B-Minus {};
 };
 ```
