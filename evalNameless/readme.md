@@ -25,13 +25,22 @@ Fatal error: exception Stdlib.Parsing.Parse_error
 式は、[教科書](https://www.fos.kuis.kyoto-u.ac.jp/~igarashi/CoPL/index.cgi)の`EvalNamelessML3`に対応しています。
 #### 入力例
 ```
-1 - 10
+let . = true in let . = 4 in if #2 then #1 + 1 else #1 - 1
 ```
 #### 出力例
 ```
-|- (1-10) evalto -9 by E-Minus {
-  |- 1 evalto 1 by E-Int {};
-  |- 10 evalto 10 by E-Int {};
-  1 minus 10 is -9 by B-Minus {};
+|- let . =true in let . =4 in if #2 then (#1 + 1) else (#1 - 1) evalto 5 by E-Let {
+  |- true evalto true by E-Bool {};
+  true |- let . =4 in if #2 then (#1 + 1) else (#1 - 1) evalto 5 by E-Let {
+    true |- 4 evalto 4 by E-Int {};
+    true, 4 |- if #2 then (#1 + 1) else (#1 - 1) evalto 5 by E-IfT {
+      true, 4 |- #2 evalto true by E-Var {};
+      true, 4 |- (#1 + 1) evalto 5 by E-Plus {
+        true, 4 |- #1 evalto 4 by E-Var {};
+        true, 4 |- 1 evalto 1 by E-Int {};
+        4 plus 1 is 5 by B-Plus {};
+      };
+    };
+  };
 };
 ```
