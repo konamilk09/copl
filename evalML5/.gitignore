@@ -1,0 +1,9 @@
+._*
+*.cmi
+*.cmo
+lexer.ml
+parser.mli
+parser.ml
+ml5
+*.txt
+.ocamlformat
